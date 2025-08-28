@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1Win Landing</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="language-selector" id="langSelect">
+    <button onclick="selectLanguage('en')">English</button>
+    <button onclick="selectLanguage('ru')">Русский</button>
+    <button onclick="selectLanguage('tj')">Тоҷикӣ</button>
+    <button onclick="selectLanguage('uz')">O‘zbekcha</button>
+  </div>
+
+  <div class="hero" id="hero">
+    <header>
+      <div class="logo">Modex Ai</div>
+       <a href="https:1wprde.com/?open=register&p=vayp">
+        <div class="header-icon" id="logo-icon"></div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="https://t.me/modex_vzlom" id="navGuide">Telegram</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <section class="hero-text">
+      <h1 id="headline">Выигрывай уже сегодня!</h1>
+      <p id="subtext">Играй в 1Win и выигрывай реальные деньги. Быстрый депозит, мгновенные призы.</p>
+    </section>
+
+    <section class="game-cards">
+      <div class="card" onclick="location.href='https:1wprde.com/?open=register&p=vayp'">
+        <img src="mines.jpg" alt="Game 1" />
+        <p>Mines ⭐</p>
+      </div>
+      <div class="card" onclick="location.href='https:1wprde.com/?open=register&p=vayp'">
+        <img src="lucky.jpg" alt="Game 2" />
+        <p>Lucky Jet 🚀</p>
+      </div>
+      <div class="card" onclick="location.href='https:1wzyuh.com/?open=register&p=1ogz'">
+        <img src="avia.jpg" alt="Game 3" />
+        <p>Avia Masters 🛩️</p>
+      </div>
+      <div class="card" onclick="location.href='https:1wprde.com/?open=register&p=vayp'">
+        <img src="modex.jpg" alt="Game 4" />
+        <p>Mode Games 💎</p>
+      </div>
+    </section>
+
+<button class="change-lang-btn" onclick="localStorage.removeItem('lang'); location.reload();">🌐 Language</button>
+
+
+    <div class="button-group">
+      <button class="cta-button" id="playBtn">Играть</button>
+       <button class="cta-button" id="guideBtn">📘 Инструкция</button>
+    </div>
+  </div> <!-- Закрываем .hero вовремя -->
+
+  <footer>
+    <div>
+      © 2025 1Win x Modex 18+   <a href="#" onclick="openPolicy()">Политика</a>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+ <!-- Модальное окно политики -->
+<div id="policyModal" class="modal">
+  <div class="modal-content">
+    <h2 id="policyTitle">Политика и условия</h2>
+    <p id="policyText">
+      Здесь будет текст политики. Он будет автоматически подставлен на нужном языке.
+    </p>
+    <button onclick="closePolicy()" class="close-btn">⬅ Назад</button>
+  </div>
+</div>
+
+</body>
+</html>
