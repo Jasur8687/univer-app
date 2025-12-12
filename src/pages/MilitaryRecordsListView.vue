@@ -33,6 +33,9 @@
           placeholder="Поиск по фамилии..."
           class="search-input"
         />
+        <button @click="loadRecords" class="btn secondary" style="margin-left: 1rem;">
+          🔄 Обновить
+        </button>
         <span class="count">Всего записей: {{ filteredRecords.length }}</span>
       </div>
 
@@ -158,10 +161,13 @@ onMounted(async () => {
 async function loadRecords() {
   try {
     loading.value = true;
+    console.log('Загрузка военных учётов...');
     records.value = await getAllMilitaryRecords();
+    console.log('Загружено записей:', records.value.length);
+    console.log('Записи:', records.value);
   } catch (error) {
     console.error('Ошибка загрузки:', error);
-    alert('Ошибка при загрузке данных');
+    alert('Ошибка при загрузке данных: ' + error.message);
   } finally {
     loading.value = false;
   }

@@ -20,7 +20,7 @@
 import { ref, onMounted } from 'vue';
 import MilitaryRecordForm from '../components/MilitaryRecordForm.vue';
 import MilitaryRecordTemplate from '../components/MilitaryRecordTemplate.vue';
-import { initDB, addMilitaryRecord } from '../lib/indexedDB';
+import { initDB, addMilitaryRecord, getAllMilitaryRecords } from '../lib/indexedDB';
 
 const currentRecord = ref({});
 
@@ -30,12 +30,19 @@ onMounted(async () => {
 
 async function handleSave(recordData) {
   try {
+    console.log('Сохранение записи:', recordData);
     const id = await addMilitaryRecord(recordData);
+    console.log('Запись сохранена с ID:', id);
     currentRecord.value = { ...recordData, id };
-    alert(`Военный учёт успешно сохранён! ID: ${id}`);
+    
+    // Проверяем что запись действительно сохранилась
+    const allRecords = await getAllMilitaryRecords();
+    console.log('Всего записей в БД:', allRecords.length);
+    
+    alert(`Военный учёт успешно сохранён! ID: ${id}\nВсего записей: ${allRecords.length}`);
   } catch (error) {
     console.error('Ошибка сохранения:', error);
-    alert('Ошибка при сохранении данных');
+    alert('Ошибка при сохранении данных: ' + error.message);
   }
 }
 </script>
