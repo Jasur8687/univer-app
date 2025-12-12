@@ -8,11 +8,13 @@
         </transition>
       </router-view>
     </main>
+    <BackupReminder />
   </div>
 </template>
 
 <script setup>
 import AppHeader from './components/layout/AppHeader.vue';
+import BackupReminder from './components/BackupReminder.vue';
 </script>
 
 <style scoped>
