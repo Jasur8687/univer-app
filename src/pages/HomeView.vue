@@ -1,181 +1,661 @@
 <template>
   <section class="home">
-    <h2 class="page-title">Главная панель</h2>
-    <p class="muted">
-      Это демонстрационный прототип интерфейса для университетской системы. Используйте навигацию
-      выше для просмотра списка студентов и заполнения форм.
-    </p>
-
-    <div class="grid three-columns">
-      <article class="card highlight">
-        <h3>📝 Формы</h3>
-        <p>Выбор между заявкой на поступление и формой военного учёта с предпросмотром в реальном времени.</p>
-      </article>
-      <article class="card highlight">
-        <h3>👥 Список студентов</h3>
-        <p>Статические записи и добавленные заявки отображаются в общей таблице.</p>
-      </article>
-      <article class="card highlight">
-        <h3>📊 Статистика</h3>
-        <p>Общие показатели и распределение заявок по факультетам.</p>
-      </article>
+    <div class="dashboard-header">
+      <div>
+        <h2 class="page-title">Панель управления</h2>
+        <p class="muted">Статистика и быстрый доступ к функциям системы</p>
+      </div>
+      <div class="header-actions">
+        <RouterLink to="/forms" class="btn-primary">➕ Новая запись</RouterLink>
+      </div>
     </div>
 
-    <!-- Statistics block -->
-    <section class="stats card" style="margin-top:1.25rem;">
-      <div class="stats-header">
-        <div>
-          <h3>Статистика заявок</h3>
-          <p class="muted small">Общие показатели и распределение по факультетам</p>
+    <!-- Main KPI Cards -->
+    <div class="kpi-cards">
+      <div class="kpi-card" @click="$router.push('/students')">
+        <div class="kpi-icon">👥</div>
+        <div class="kpi-content">
+          <div class="kpi-label">Всего студентов</div>
+          <div class="kpi-value">{{ totalStudents }}</div>
+          <div class="kpi-trend">{{ studentsThisMonth }} за месяц</div>
         </div>
       </div>
-      <div class="kpi-grid">
-        <div class="kpi">
-          <div class="kpi-label">Всего заявок</div>
-          <div class="kpi-value">{{ total }}</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">За текущий год</div>
-          <div class="kpi-value">{{ thisYear }}</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">За 30 дней</div>
-          <div class="kpi-value">{{ last30 }}</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">За 7 дней</div>
-          <div class="kpi-value">{{ last7 }}</div>
+      
+      <div class="kpi-card" @click="$router.push('/military-records-list')">
+        <div class="kpi-icon">🪖</div>
+        <div class="kpi-content">
+          <div class="kpi-label">Военный учёт</div>
+          <div class="kpi-value">{{ totalMilitary }}</div>
+          <div class="kpi-trend">{{ militaryThisMonth }} за месяц</div>
         </div>
       </div>
+      
+      <div class="kpi-card">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-content">
+          <div class="kpi-label">Факультеты</div>
+          <div class="kpi-value">{{ totalFaculties }}</div>
+          <div class="kpi-trend">{{ totalSpecialties }} специальностей</div>
+        </div>
+      </div>
+      
+      <div class="kpi-card backup-card" :class="{ warning: needsBackup }">
+        <div class="kpi-icon">💾</div>
+        <div class="kpi-content">
+          <div class="kpi-label">Последний бэкап</div>
+          <div class="kpi-value">{{ daysSinceBackup }}</div>
+          <div class="kpi-trend">{{ backupStatus }}</div>
+        </div>
+      </div>
+    </div>
 
-      <div class="chart-card">
-        <div class="chart-header">
-          <span>Распределение по факультетам</span>
-          <div class="legend">
-            <span class="legend-item">
-              <span class="legend-swatch swatch-a"></span> Заявки
-            </span>
-            <span class="legend-item">ТОП-6</span>
-          </div>
-        </div>
-        <div class="stat-chart" v-if="Object.keys(perFaculty).length">
-          <div class="chart-row" v-for="(count, fac) in topFaculties" :key="fac">
-            <div class="fac-name" :title="fac">{{ fac }}</div>
-            <div class="bar-wrap" aria-label="bar">
-              <div class="bar gradient-a" :style="{ width: (count / maxFacultyCount * 100) + '%' }"></div>
-            </div>
-            <div class="fac-count">{{ count }}</div>
-          </div>
-        </div>
-        <div v-else class="muted small">Нет данных для построения графика</div>
+    <!-- Quick Actions -->
+    <div class="quick-actions card">
+      <h3>Быстрые действия</h3>
+      <div class="actions-grid">
+        <button @click="$router.push('/application')" class="action-btn">
+          <span class="action-icon">📝</span>
+          <span class="action-text">Новая заявка</span>
+        </button>
+        <button @click="$router.push('/military-record')" class="action-btn">
+          <span class="action-icon">🪖</span>
+          <span class="action-text">Военный учёт</span>
+        </button>
+        <button @click="exportAllData" class="action-btn">
+          <span class="action-icon">💾</span>
+          <span class="action-text">Экспорт всех данных</span>
+        </button>
+        <button @click="showStats = !showStats" class="action-btn">
+          <span class="action-icon">📈</span>
+          <span class="action-text">Подробная статистика</span>
+        </button>
       </div>
-    </section>
+    </div>
+
+    <!-- Detailed Statistics -->
+    <div v-if="showStats" class="stats card">
+      <div class="stats-header">
+        <h3>Детальная статистика</h3>
+        <button @click="showStats = false" class="btn-close">✕</button>
+      </div>
+      
+      <div class="stats-sections">
+        <!-- Recent Activity -->
+        <div class="stats-section">
+          <h4>Последние записи</h4>
+          <div class="recent-list">
+            <div v-for="record in recentRecords" :key="record.id" class="recent-item">
+              <div class="recent-info">
+                <div class="recent-name">{{ record.lastName }} {{ record.firstName }}</div>
+                <div class="recent-meta">{{ record.type }} • {{ formatDate(record.createdAt) }}</div>
+              </div>
+            </div>
+            <div v-if="!recentRecords.length" class="empty-state">Нет данных</div>
+          </div>
+        </div>
+
+        <!-- Faculty Distribution -->
+        <div class="stats-section">
+          <h4>Распределение по факультетам</h4>
+          <div class="stat-chart" v-if="Object.keys(perFaculty).length">
+            <div class="chart-row" v-for="(count, fac) in topFaculties" :key="fac">
+              <div class="fac-name" :title="fac">{{ fac }}</div>
+              <div class="bar-wrap">
+                <div class="bar gradient-a" :style="{ width: (count / maxFacultyCount * 100) + '%' }"></div>
+              </div>
+              <div class="fac-count">{{ count }}</div>
+            </div>
+          </div>
+          <div v-else class="empty-state">Нет данных</div>
+        </div>
+
+        <!-- Monthly Trend -->
+        <div class="stats-section">
+          <h4>Динамика по месяцам</h4>
+          <div class="trend-chart">
+            <div v-for="(month, idx) in last6Months" :key="idx" class="trend-bar">
+              <div class="trend-value">{{ month.count }}</div>
+              <div class="trend-bar-fill" :style="{ height: (month.count / maxMonthCount * 100) + '%' }"></div>
+              <div class="trend-label">{{ month.name }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useStudentsStore } from '../stores/students';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { getAllApplications, getAllMilitaryRecords } from '../lib/indexedDB';
+import { exportApplicationsToExcel } from '../utils/excelImport';
+import { exportMilitaryRecordsToExcel } from '../utils/excelImport';
 import { FACULTIES } from '../data/faculties';
 
-const store = useStudentsStore();
-const students = computed(() => store.students);
+const router = useRouter();
+const showStats = ref(false);
 
-const total = computed(() => students.value.length);
-const thisYear = computed(() => {
-  const y = new Date().getFullYear();
-  return students.value.filter((s) => s.applicationDate && new Date(s.applicationDate).getFullYear() === y).length;
+// Data
+const applications = ref([]);
+const militaryRecords = ref([]);
+
+// Load data
+onMounted(async () => {
+  applications.value = await getAllApplications();
+  militaryRecords.value = await getAllMilitaryRecords();
 });
 
+// KPI Calculations
+const totalStudents = computed(() => applications.value.length);
+const totalMilitary = computed(() => militaryRecords.value.length);
+const totalFaculties = computed(() => {
+  const unique = new Set(applications.value.map(a => a.faculty || a.facultyId).filter(Boolean));
+  return unique.size;
+});
+const totalSpecialties = computed(() => {
+  const unique = new Set(applications.value.map(a => a.specialty || a.specialtyId).filter(Boolean));
+  return unique.size;
+});
+
+const studentsThisMonth = computed(() => {
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  return applications.value.filter(a => {
+    if (!a.createdAt) return false;
+    const date = new Date(a.createdAt);
+    return date.getMonth() === thisMonth && date.getFullYear() === thisYear;
+  }).length;
+});
+
+const militaryThisMonth = computed(() => {
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  return militaryRecords.value.filter(r => {
+    if (!r.createdAt) return false;
+    const date = new Date(r.createdAt);
+    return date.getMonth() === thisMonth && date.getFullYear() === thisYear;
+  }).length;
+});
+
+// Backup tracking
+const daysSinceBackup = computed(() => {
+  const lastBackup = localStorage.getItem('lastBackupDate');
+  if (!lastBackup) return 'Никогда';
+  const days = Math.floor((Date.now() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24));
+  return days === 0 ? 'Сегодня' : `${days} дн. назад`;
+});
+
+const backupStatus = computed(() => {
+  const lastBackup = localStorage.getItem('lastBackupDate');
+  if (!lastBackup) return 'Создайте бэкап';
+  const days = Math.floor((Date.now() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24));
+  return days > 7 ? 'Требуется бэкап' : 'Актуально';
+});
+
+const needsBackup = computed(() => {
+  const lastBackup = localStorage.getItem('lastBackupDate');
+  if (!lastBackup) return true;
+  const days = Math.floor((Date.now() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24));
+  return days > 7;
+});
+
+// Recent records
+const recentRecords = computed(() => {
+  const appRecords = applications.value.map(a => ({ ...a, type: 'Студент' }));
+  const milRecords = militaryRecords.value.map(m => ({ ...m, type: 'Военный учёт' }));
+  const all = [...appRecords, ...milRecords];
+  return all.sort((a, b) => {
+    const dateA = new Date(a.createdAt || 0);
+    const dateB = new Date(b.createdAt || 0);
+    return dateB - dateA;
+  }).slice(0, 10);
+});
+
+// Faculty distribution
 const perFaculty = computed(() => {
   const map = {};
-  students.value.forEach((s) => {
-    const key = s.facultyName || (FACULTIES.find(f => f.id === s.facultyId)?.name) || 'Не указан';
+  applications.value.forEach(s => {
+    const key = s.faculty || FACULTIES.find(f => f.id === s.facultyId)?.name || 'Не указан';
     map[key] = (map[key] || 0) + 1;
   });
   return map;
 });
 
 const topFaculties = computed(() => {
-  return Object.entries(perFaculty.value).sort((a,b) => b[1] - a[1]).slice(0,6).reduce((acc, [k,v]) => {
-    acc[k] = v; return acc;
-  }, {});
+  return Object.entries(perFaculty.value)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .reduce((acc, [k, v]) => {
+      acc[k] = v;
+      return acc;
+    }, {});
 });
 
-const maxFacultyCount = computed(() => Math.max(...Object.values(topFaculties.value || { '': 0 })));
+const maxFacultyCount = computed(() => Math.max(...Object.values(topFaculties.value || { '': 1 }), 1));
 
-const last7 = computed(() => {
-  const now = Date.now();
-  const sevenDays = 7 * 24 * 60 * 60 * 1000;
-  return students.value.filter((s) => {
-    if (!s.applicationDate) return false;
-    const t = new Date(s.applicationDate).getTime();
-    return now - t <= sevenDays;
-  }).length;
+// Monthly trend
+const last6Months = computed(() => {
+  const months = [];
+  const now = new Date();
+  const monthNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+  
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    
+    const count = applications.value.filter(a => {
+      if (!a.createdAt) return false;
+      const d = new Date(a.createdAt);
+      return d.getMonth() === month && d.getFullYear() === year;
+    }).length;
+    
+    months.push({
+      name: monthNames[month],
+      count
+    });
+  }
+  
+  return months;
 });
 
-const last30 = computed(() => {
-  const now = Date.now();
-  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-  return students.value.filter((s) => {
-    if (!s.applicationDate) return false;
-    const t = new Date(s.applicationDate).getTime();
-    return now - t <= thirtyDays;
-  }).length;
-});
+const maxMonthCount = computed(() => Math.max(...last6Months.value.map(m => m.count), 1));
+
+// Actions
+const exportAllData = async () => {
+  if (applications.value.length > 0) {
+    await exportApplicationsToExcel(applications.value);
+  }
+  if (militaryRecords.value.length > 0) {
+    await exportMilitaryRecordsToExcel(militaryRecords.value);
+  }
+  localStorage.setItem('lastBackupDate', new Date().toISOString());
+  alert('Все данные экспортированы!');
+};
+
+const formatDate = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}.${month}.${year}`;
+};
 </script>
 
 <style scoped>
-.grid {
+.home {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-primary {
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* KPI Cards */
+.kpi-cards {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
-.three-columns {
-  grid-template-columns: repeat(3, 1fr);
+.kpi-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-@media (max-width: 968px) {
-  .three-columns {
-    grid-template-columns: 1fr;
+.kpi-card:hover {
+  border-color: #6366f1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.kpi-card.backup-card.warning {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, #fef3c7 0%, white 50%);
+}
+
+.kpi-icon {
+  font-size: 2rem;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.kpi-content {
+  flex: 1;
+}
+
+.kpi-label {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.kpi-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.kpi-trend {
+  color: #6366f1;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+/* Quick Actions */
+.quick-actions {
+  margin-bottom: 2rem;
+}
+
+.quick-actions h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.action-btn {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.action-btn:hover {
+  border-color: #6366f1;
+  background: #f8fafc;
+  transform: translateY(-2px);
+}
+
+.action-icon {
+  font-size: 1.75rem;
+}
+
+.action-text {
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Detailed Stats */
+.stats {
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.highlight {
-  border: 1px solid #e0e7ff;
-  background: linear-gradient(180deg, #eef2ff 0%, #fff 70%);
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
 }
 
-.highlight h3 {
-  margin-top: 0;
+.stats-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
 }
 
-.stats { padding: 1rem; }
-.stats-header { display:flex; align-items:flex-end; justify-content:space-between; }
-.kpi-grid {
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.75rem;
-  margin-top: 0.75rem;
+.btn-close {
+  background: #f3f4f6;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.25rem;
+  color: #6b7280;
+  transition: all 0.2s;
 }
-.kpi { background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; padding:0.75rem }
-.kpi-label { color:#64748b; font-size:0.85rem }
-.kpi-value { font-weight:800; font-size:1.4rem; margin-top:4px; color:#0f172a }
 
-.chart-card { margin-top: 1rem; border:1px solid #e5e7eb; border-radius:10px; padding:0.75rem; background:#fff }
-.chart-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem }
-.legend { display:flex; align-items:center; gap:12px }
-.legend-item { display:flex; align-items:center; gap:6px; color:#64748b; font-size:0.85rem }
-.legend-swatch { width:12px; height:12px; border-radius:3px; display:inline-block }
-.swatch-a { background: linear-gradient(90deg,#6366f1,#06b6d4) }
+.btn-close:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
 
-.stat-chart { padding-left: 4px }
-.chart-row { display:flex; align-items:center; gap:10px; margin:8px 0 }
-.fac-name { width: clamp(160px, 22vw, 280px); font-size:0.95rem; color:#374151; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
-.bar-wrap { flex:1; background:#f3f4f6; border-radius:999px; height:12px; overflow:hidden }
-.bar { height:12px; }
-.gradient-a { background: linear-gradient(90deg,#6366f1,#06b6d4); }
-.fac-count { width:48px; text-align:right; font-weight:700; color:#0f172a }
+.stats-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.stats-section {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.stats-section h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #374151;
+}
+
+/* Recent Records */
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.recent-item {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.recent-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.recent-name {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.recent-meta {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* Faculty Chart */
+.stat-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fac-name {
+  width: 140px;
+  font-size: 0.875rem;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-wrap {
+  flex: 1;
+  background: #e5e7eb;
+  border-radius: 4px;
+  height: 20px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.gradient-a {
+  background: linear-gradient(90deg, #6366f1, #06b6d4);
+}
+
+.fac-count {
+  width: 40px;
+  text-align: right;
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+/* Monthly Trend */
+.trend-chart {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 120px;
+  padding: 1rem 0.5rem;
+}
+
+.trend-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.trend-value {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #374151;
+  min-height: 1rem;
+}
+
+.trend-bar-fill {
+  width: 100%;
+  background: linear-gradient(180deg, #6366f1, #8b5cf6);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+  min-height: 4px;
+}
+
+.trend-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.muted {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .kpi-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-sections {
+    grid-template-columns: 1fr;
+  }
+  
+  .actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 </style>
 
 
